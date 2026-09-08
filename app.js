@@ -42,9 +42,15 @@
       .join("");
   }
 
-  function renderCategoryBar(categories, onSelect) {
+  function renderCategoryBar(categories, platformId, onSelect) {
     const el = document.getElementById("categoryBar");
-    const active = categories.filter((c) => c.is_active).sort(byPriority);
+    let active = categories.filter((c) => c.is_active);
+    // platform_id가 비어있는 카테고리는 모든 플랫폼 공용이라, 특정 플랫폼이
+    // 선택된 상태에서도 항상 같이 보여준다. "전체 플랫폼"일 때는 필터링 없이 다 보여준다.
+    if (platformId && platformId !== "all") {
+      active = active.filter((c) => !c.platform_id || c.platform_id === platformId);
+    }
+    active.sort(byPriority);
     const all = [{ id: "all", name: "전체" }, ...active];
 
     el.innerHTML = all
@@ -138,12 +144,20 @@
       renderProducts(products, currentCategory, currentPlatform);
     }
 
-    renderCategoryBar(categories, (categoryId) => {
-      currentCategory = categoryId;
-      refresh();
-    });
+    function refreshCategoryBar() {
+      renderCategoryBar(categories, currentPlatform, (categoryId) => {
+        currentCategory = categoryId;
+        refresh();
+      });
+    }
+
+    refreshCategoryBar();
     renderPlatformBar(platforms, (platformId) => {
       currentPlatform = platformId;
+      // 플랫폼이 바뀌면 이전에 고른 카테고리가 새 플랫폼에 없을 수 있으니
+      // "전체"로 리셋하고 카테고리 칩 목록 자체를 새로 그린다.
+      currentCategory = "all";
+      refreshCategoryBar();
       refresh();
     });
 
